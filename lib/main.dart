@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -142,7 +142,7 @@ class DemoBalanceCard extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: const LinearGradient(colors: [Color(0xFF1599F5), pwDeepBlue]),
         borderRadius: BorderRadius.circular(23),
-        boxShadow: [BoxShadow(color: pwBlue.withOpacity(.18), blurRadius: 18, offset: const Offset(0, 8))],
+        boxShadow: [BoxShadow(color: pwBlue.withValues(alpha: .18), blurRadius: 18, offset: const Offset(0, 8))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -536,15 +536,33 @@ class _RedeemPageState extends State<RedeemPage> {
           const SizedBox(height: 5),
           const Text('UI prototype only. No payment or payout is created.', style: TextStyle(color: pwMuted, fontSize: 12)),
           const SizedBox(height: 14),
-          ...['Gift card preview', 'UPI flow preview (disabled)', 'Bank transfer preview (disabled)'].map((option) => Card(
-            child: RadioListTile<String>(
-              value: option,
-              groupValue: selectedOption,
-              onChanged: option.contains('disabled') ? null : (value) => setState(() => selectedOption = value!),
-              title: Text(option, style: const TextStyle(color: pwNavy, fontSize: 13, fontWeight: FontWeight.w700)),
-              secondary: const Icon(Icons.redeem, color: pwBlue),
+          RadioGroup<String>(
+            groupValue: selectedOption,
+            onChanged: (value) {
+              if (value != null && !value.contains('disabled')) {
+                setState(() => selectedOption = value);
+              }
+            },
+            child: Column(
+              children: ['Gift card preview', 'UPI flow preview (disabled)', 'Bank transfer preview (disabled)']
+                  .map((option) => Card(
+                        child: RadioListTile<String>(
+                          value: option,
+                          enabled: !option.contains('disabled'),
+                          title: Text(
+                            option,
+                            style: const TextStyle(
+                              color: pwNavy,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          secondary: const Icon(Icons.redeem, color: pwBlue),
+                        ),
+                      ))
+                  .toList(),
             ),
-          )),
+          ),
           const SizedBox(height: 14),
           TextField(
             controller: amountController,

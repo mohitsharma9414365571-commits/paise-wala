@@ -1,30 +1,40 @@
-# Paise Wala Flutter Frontend
+# Paise Wala — Complete Flutter Starter
 
-This is the mobile-first Flutter frontend starter matching the approved light-blue / white design reference.
+Light-blue / white mobile rewards-app frontend with a GitHub Actions Android APK build pipeline.
 
-## Included screens
-- Home dashboard
+## Screens included
+- Home dashboard with demo balance and quick actions
 - Earn Rewards with category filters
 - Wallet and sample transaction history
-- Refer & Earn
-- Redeem preview
-- Profile and settings placeholders
+- Referral screen
+- Redemption preview
+- Profile screen
 
-## Demo-mode safety
-All balances, coins, tasks, referral codes and transactions are sample UI data.
-No real money is earned, stored, transferred or paid out. The redeem page is a preview only.
-It does not collect UPI IDs, bank details, card data or initiate payments.
+## Build APK automatically on GitHub
+1. Push this repository to the `main` branch.
+2. Open the repository's **Actions** tab.
+3. Open the latest **Build Paise Wala Android APK** run.
+4. Wait for the workflow to finish successfully.
+5. Download the `paise-wala-debug-apk` artifact.
 
-## Run
+The workflow creates Android platform scaffolding in the GitHub runner if the `android/` folder is absent, then runs `flutter pub get`, `flutter analyze`, `flutter test`, and `flutter build apk --debug`.
+
+You can also trigger it manually from Actions using **Run workflow**.
+
+## Run locally
 Install Flutter stable, then:
 ```bash
 flutter pub get
+flutter analyze
+flutter test
 flutter run
 ```
 
-## Backend preparation
-See `supabase/schema.sql` and `supabase/README.md`.
-The Flutter app is intentionally frontend-only for this milestone. Later backend work should use
-Supabase Auth, Postgres with Row Level Security, and server-side Edge Functions for reward
-verification. Never trust reward amounts supplied by the client. Never put service-role keys
-or payment secrets in the Flutter app or GitHub.
+## Important current status
+This is a complete buildable Flutter starter and demo-mode frontend. It is **not yet a live earning/payment app**. Balance, coins, tasks, referral code and transactions are sample UI data. No real money is earned, stored, transferred or paid out. The app does not collect UPI IDs, bank details, or card information.
+
+## Backend
+See `supabase/README.md` and `supabase/schema.sql`. Supabase credentials and provider integrations must be configured separately. Keep service-role keys, webhook secrets, payment secrets, and Android signing keys out of the app and Git repository.
+
+## Android release
+The included workflow builds a debug APK for testing. A Play Store-ready release requires a properly secured signing key, release configuration, privacy policy, compliance checks and store setup.

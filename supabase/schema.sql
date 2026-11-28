@@ -1,4 +1,4 @@
--- Starter schema only. Review and adapt before applying to a live Supabase project.
+-- Initial schema foundation. Review before production deployment.
 create extension if not exists pgcrypto;
 
 create table if not exists public.profiles (
@@ -21,7 +21,7 @@ create table if not exists public.tasks (
 create table if not exists public.reward_ledger (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
-  event_type text not null check (event_type in ('task_reward','daily_bonus','referral_reward','adjustment','redemption_preview')),
+  event_type text not null check (event_type in ('task_reward','daily_bonus','referral_reward','adjustment','redemption')),
   points integer not null,
   description text not null,
   status text not null default 'pending' check (status in ('pending','verified','rejected')),
@@ -42,11 +42,26 @@ alter table public.tasks enable row level security;
 alter table public.reward_ledger enable row level security;
 alter table public.referrals enable row level security;
 
-create policy "Read own profile" on public.profiles for select using (auth.uid() = id);
-create policy "Update own profile" on public.profiles for update using (auth.uid() = id) with check (auth.uid() = id);
-create policy "Read active tasks" on public.tasks for select to authenticated using (is_active = true);
-create policy "Read own ledger" on public.reward_ledger for select using (auth.uid() = user_id);
-create policy "Read own referrals" on public.referrals for select using (auth.uid() = referrer_user_id or auth.uid() = referred_user_id);
+drop policy if exists "Read own profile" on public.profiles;
+create policy "Read own profile" on public.profiles
+  for select to authenticated using (auth.uid() = id);
 
--- Deliberately no client insert/update policy for reward_ledger or referrals.
--- Trusted Edge Functions must validate task callbacks and referral eligibility.
+drop policy if exists "Update own profile" on public.profiles;
+create policy "Update own profile" on public.profiles
+  for update to authenticated using (auth.uid() = id) with check (auth.uid() = id);
+
+drop policy if exists "Read active tasks" on public.tasks;
+create policy "Read active tasks" on public.tasks
+  for select to authenticated using (is_active = true);
+
+drop policy if exists "Read own ledger" on public.reward_ledger;
+create policy "Read own ledger" on public.reward_ledger
+  for select to authenticated using (auth.uid() = user_id);
+
+drop policy if exists "Read own referrals" on public.referrals;
+create policy "Read own referrals" on public.referrals
+  for select to authenticated
+  using (auth.uid() = referrer_user_id or auth.uid() = referred_user_id);
+
+-- Intentionally no client insert/update policies for reward_ledger or referrals.
+-- Trusted Edge Functions must validate all reward events and write ledger entries.

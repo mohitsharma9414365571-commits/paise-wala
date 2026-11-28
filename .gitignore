@@ -4,9 +4,13 @@
 build/
 .flutter-plugins
 .flutter-plugins-dependencies
+.idea/
+.vscode/
 .env
 .env.*
 !.env.example
-.idea/
-.vscode/
 android/local.properties
+*.jks
+*.keystore
+key.properties
+.DS_Store

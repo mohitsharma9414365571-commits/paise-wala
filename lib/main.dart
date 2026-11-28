@@ -1,3 +1,7 @@
+import 'dart:async';
+import 'google_auth_config.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'supabase_config.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -50,7 +54,7 @@ class PaiseWalaApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const MainShell(),
+      home: const AuthGate(),
     );
   }
 }
@@ -630,6 +634,180 @@ class ProfilePage extends StatelessWidget {
           )),
           OutlinedButton.icon(onPressed: () => showInfo(context, 'Demo profile: no account signed in.'), icon: const Icon(Icons.logout), label: const Text('Sign out (demo)')),
         ],
+      ),
+    );
+  }
+}
+
+
+class AuthGate extends StatefulWidget {
+  const AuthGate({super.key});
+
+  @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  late Session? session;
+  late final StreamSubscription<AuthState> authSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    final auth = Supabase.instance.client.auth;
+    session = auth.currentSession;
+    authSubscription = auth.onAuthStateChange.listen((data) {
+      if (mounted) setState(() => session = data.session);
+    });
+  }
+
+  @override
+  void dispose() {
+    authSubscription.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (session == null) return const GoogleLoginPage();
+    return const MainShell();
+  }
+}
+
+class GoogleLoginPage extends StatefulWidget {
+  const GoogleLoginPage({super.key});
+
+  @override
+  State<GoogleLoginPage> createState() => _GoogleLoginPageState();
+}
+
+class _GoogleLoginPageState extends State<GoogleLoginPage> {
+  bool loading = false;
+  static bool googleInitialized = false;
+
+  Future<void> signInWithGoogle() async {
+    if (loading) return;
+    setState(() => loading = true);
+
+    try {
+      final google = GoogleSignIn.instance;
+
+      if (!googleInitialized) {
+        await google.initialize(
+          serverClientId: GoogleAuthConfig.webClientId,
+        );
+        googleInitialized = true;
+      }
+
+      if (!google.supportsAuthenticate()) {
+        throw Exception('Native Google sign-in is unavailable on this platform.');
+      }
+
+      final account = await google.authenticate();
+      final idToken = account.authentication.idToken;
+
+      if (idToken == null || idToken.isEmpty) {
+        throw Exception('Google did not return an ID token. Check OAuth client configuration.');
+      }
+
+      final authorization = await account.authorizationClient.authorizeScopes(
+        const ['email'],
+      );
+
+      final accessToken = authorization.accessToken;
+      if (accessToken.isEmpty) {
+        throw Exception('Google did not return an access token.');
+      }
+
+      await Supabase.instance.client.auth.signInWithIdToken(
+        provider: OAuthProvider.google,
+        idToken: idToken,
+        accessToken: accessToken,
+      );
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Google login failed: $error'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: pwBackground,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(25),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(height: 65),
+                const BrandMark(size: 105),
+                const SizedBox(height: 35),
+                const Text(
+                  'Paise Wala',
+                  style: TextStyle(
+                    color: pwNavy,
+                    fontSize: 34,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'Earn rewards. Redeem securely.',
+                  style: TextStyle(color: pwMuted, fontSize: 15),
+                ),
+                const SizedBox(height: 65),
+                SizedBox(
+                  width: double.infinity,
+                  height: 58,
+                  child: FilledButton.icon(
+                    onPressed: loading ? null : signInWithGoogle,
+                    icon: loading
+                        ? const SizedBox(
+                            width: 19,
+                            height: 19,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.g_mobiledata, size: 30),
+                    label: Text(
+                      loading ? 'Please wait...' : 'Continue with Google',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF00365C),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(17),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 22),
+                const Text(
+                  'Sign in securely using your Google account.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: pwMuted, fontSize: 12),
+                ),
+                const SizedBox(height: 65),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

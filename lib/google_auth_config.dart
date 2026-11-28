@@ -1,3 +1,4 @@
 class GoogleAuthConfig {
-  static const webClientId = '846637182070-a2am4dvkfp1msmlvfq7pvegoisab7phl.apps.googleusercontent.com';
+  static const String webClientId =
+      '846637182070-mieh4c4u8ac1b65q1md3iahljpjf16b1.apps.googleusercontent.com';
 }
